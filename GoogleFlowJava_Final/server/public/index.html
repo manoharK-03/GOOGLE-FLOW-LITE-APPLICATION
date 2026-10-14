@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Google Flow — Text to Video &amp; Image</title>
+<link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+
+  <!-- AUTH -->
+  <div id="auth-screen" class="auth-screen">
+    <div class="auth-card">
+      <div class="brand"><span class="brand-dot"></span> Google Flow</div>
+      <p class="tagline">Turn a text prompt into a video clip or an image — distributed over socket-connected worker nodes.</p>
+      <div class="tabs">
+        <button class="tab-btn active" data-tab="login">Log In</button>
+        <button class="tab-btn" data-tab="signup">Sign Up</button>
+      </div>
+      <form id="login-form" class="auth-form">
+        <input type="email" id="login-email" placeholder="Email" required />
+        <input type="password" id="login-password" placeholder="Password" required />
+        <button type="submit" class="primary-btn">Log In</button>
+      </form>
+      <form id="signup-form" class="auth-form hidden">
+        <input type="text" id="signup-name" placeholder="Full name" required />
+        <input type="email" id="signup-email" placeholder="Email" required />
+        <input type="password" id="signup-password" placeholder="Password" required />
+        <button type="submit" class="primary-btn">Create account</button>
+      </form>
+      <p id="auth-message" class="auth-message"></p>
+    </div>
+  </div>
+
+  <!-- APP -->
+  <div id="app-screen" class="app-screen hidden">
+    <aside class="sidebar">
+      <div class="brand"><span class="brand-dot"></span> Google Flow</div>
+      <nav class="nav">
+        <button class="nav-btn active" data-view="home">🏠 Home</button>
+        <button class="nav-btn" data-view="search">🔍 Search</button>
+        <button class="nav-btn" data-view="create">🎬 Text → Video</button>
+        <button class="nav-btn" data-view="image">🖼 Text → Image</button>
+        <button class="nav-btn" data-view="i2v">📷 Image → Video</button>
+        <button class="nav-btn" data-view="library">📼 Library</button>
+        <button class="nav-btn" data-view="assets">🧍 My Assets</button>
+        <button class="nav-btn" data-view="scenes">✂️ Scene Builder</button>
+        <button class="nav-btn" data-view="playlists">🎞 Playlists</button>
+        <button class="nav-btn" data-view="history">🕓 History</button>
+        <button class="nav-btn" data-view="cluster">🖧 Cluster</button>
+        <button class="nav-btn" data-view="account">👤 Account</button>
+      </nav>
+      <div class="sidebar-footer">
+        <div id="welcome-name" class="welcome-name"></div>
+        <button id="logout-btn" class="ghost-btn">Log out</button>
+      </div>
+    </aside>
+
+    <main class="main">
+      <section id="view-home" class="view">
+        <h1>Home</h1>
+        <p id="home-stats" class="subtle"></p>
+        <h2>Recently created</h2>
+        <div id="home-recent" class="card-grid"></div>
+        <h2>Flow TV <span class="subtle small">— clips published by everyone</span></h2>
+        <div id="home-tv" class="card-grid"></div>
+      </section>
+
+      <section id="view-search" class="view hidden">
+        <h1>Search</h1>
+        <div class="row"><input id="search-input" placeholder="Search prompts, styles, authors…" />
+          <button id="search-btn" class="primary-btn">Search</button></div>
+        <div id="search-grid" class="card-grid"></div>
+      </section>
+
+      <section id="view-create" class="view hidden">
+        <h1>Text → Video</h1>
+        <p class="subtle">Describe a scene. The job is queued, load-balanced to a worker node and rendered.</p>
+        <div id="extend-banner" class="extend-banner hidden"></div>
+        <textarea id="prompt-input" rows="4" placeholder="e.g. a dog running on a beach at sunset"></textarea>
+        <div class="row">
+          <select id="style-select"><option value="realistic">Realistic</option><option value="cartoon">Cartoon</option><option value="cinematic">Cinematic</option></select>
+          <select id="camera-select"><option value="static">Camera: Static</option><option value="pan">Camera: Pan</option><option value="tilt">Camera: Tilt</option><option value="zoom">Camera: Zoom</option></select>
+          <select id="aspect-select"><option value="16:9">16:9 Landscape</option><option value="9:16">9:16 Portrait</option></select>
+          <select id="model-select"><option value="fast">Veo Fast</option><option value="quality">Veo Quality</option></select>
+        </div>
+        <div class="row"><button id="generate-btn" class="primary-btn">Generate</button></div>
+        <div id="job-status-box" class="job-status-box hidden">
+          <div class="spinner"></div>
+          <div><div id="job-status-text" class="job-status-text"></div><div id="job-status-sub" class="subtle small"></div></div>
+        </div>
+      </section>
+
+      <section id="view-image" class="view hidden">
+        <h1>Text → Image</h1>
+        <p class="subtle">Describe a picture. It travels the same socket pipeline: gateway → backend job queue → scheduler → worker node → AI image API.</p>
+        <textarea id="img-prompt-input" rows="4" placeholder="e.g. a lighthouse on a cliff during a thunderstorm"></textarea>
+        <div class="row">
+          <select id="img-style-select"><option value="realistic">Realistic</option><option value="cartoon">Cartoon</option><option value="cinematic">Cinematic</option><option value="anime">Anime</option><option value="painting">Painting</option><option value="3d">3D render</option></select>
+          <select id="img-aspect-select"><option value="16:9">16:9 Landscape</option><option value="9:16">9:16 Portrait</option><option value="1:1">1:1 Square</option></select>
+          <select id="img-model-select"><option value="fast">Fast</option><option value="quality">Quality (larger)</option></select>
+        </div>
+        <div class="row"><button id="img-generate-btn" class="primary-btn">Generate image</button></div>
+        <div id="img-status-box" class="job-status-box hidden">
+          <div class="spinner"></div>
+          <div><div id="img-status-text" class="job-status-text"></div><div id="img-status-sub" class="subtle small"></div></div>
+        </div>
+        <div id="img-result" class="img-result hidden"><img id="img-result-img" alt="generated image" /></div>
+      </section>
+
+      <section id="view-i2v" class="view hidden">
+        <h1>Image → Video</h1>
+        <p class="subtle">Upload a picture and say what should happen. A worker node animates it into a 5–6 s clip (AI video model, with a local motion-effect fallback). AI models can take 1–3 minutes.</p>
+        <div class="row"><input type="file" id="i2v-file" accept="image/*" /></div>
+        <div id="i2v-preview" class="img-result hidden"><img id="i2v-preview-img" alt="your upload" /></div>
+        <textarea id="i2v-prompt" rows="3" placeholder="e.g. the dog jumps out of the swimming pool and shakes off the water"></textarea>
+        <div class="row">
+          <select id="i2v-seconds"><option value="5">5 seconds</option><option value="6">6 seconds</option></select>
+          <button id="i2v-generate-btn" class="primary-btn">Generate video</button>
+        </div>
+        <div id="i2v-status-box" class="job-status-box hidden">
+          <div class="spinner"></div>
+          <div><div id="i2v-status-text" class="job-status-text"></div><div id="i2v-status-sub" class="subtle small"></div></div>
+        </div>
+        <div id="i2v-result" class="img-result hidden"></div>
+      </section>
+
+      <section id="view-library" class="view hidden">
+        <h1>Library</h1>
+        <p class="subtle">Your clips and images, newest first.</p>
+        <div class="row"><select id="lib-filter"><option value="all">All</option><option value="video">Videos only</option><option value="image">Images only</option></select></div>
+        <div id="library-grid" class="card-grid"></div>
+      </section>
+
+      <section id="view-assets" class="view hidden">
+        <h1>My Assets <span class="subtle small">— character &amp; asset consistency</span></h1>
+        <p class="subtle">Upload a picture of a person, an object or a location. Then pick it as a <b>Reference</b> on the Text → Video, Text → Image or Image → Video page: Image → Video animates the picture itself; for text prompts the description you write here is added to your prompt, so the same character / object / place is described the same way every time.</p>
+        <div class="asset-upload">
+          <div class="row">
+            <input type="file" id="asset-file" accept="image/*" />
+            <input id="asset-name" placeholder="Name, e.g. Maya" maxlength="40" />
+            <select id="asset-type"><option value="character">🧍 Character</option><option value="object">📦 Object</option><option value="location">🏞 Location</option></select>
+          </div>
+          <textarea id="asset-desc" rows="2" maxlength="300" placeholder="Description used in text prompts, e.g. young woman, short red hair, green raincoat (optional but recommended)"></textarea>
+          <div class="row"><button id="asset-upload-btn" class="primary-btn">⬆ Upload asset</button><span id="asset-msg" class="subtle small"></span></div>
+        </div>
+        <h3>Your assets</h3>
+        <div id="asset-grid" class="asset-grid"></div>
+      </section>
+
+      <section id="view-scenes" class="view hidden">
+        <h1>Scene Builder <span class="subtle small">— video timeline</span></h1>
+        <p class="subtle">Combine clips and images from your Library into one movie: add them to the timeline, drag to rearrange, trim each scene, preview the sequence, then generate it. Uses no generation credits.</p>
+        <div class="sb-layout">
+          <div class="sb-side">
+            <h3>Your Library</h3>
+            <div class="row">
+              <select id="sb-filter"><option value="all">All</option><option value="video">Videos only</option><option value="image">Images only</option></select>
+              <select id="sb-playlist"><option value="">➕ Add a whole playlist…</option></select>
+            </div>
+            <div id="sb-pick" class="sb-pick"></div>
+          </div>
+          <div class="sb-main">
+            <div class="row">
+              <input id="sb-title" placeholder="Movie title (optional)" maxlength="80" />
+              <select id="sb-aspect"><option value="auto">Size: from first scene</option><option value="16:9">16:9 Landscape</option><option value="9:16">9:16 Portrait</option><option value="1:1">1:1 Square</option></select>
+              <select id="sb-format"><option value="gif">Output: GIF</option></select>
+            </div>
+            <div id="sb-ruler" class="sb-ruler"></div>
+            <div id="sb-total" class="subtle small"></div>
+            <div id="sb-timeline" class="sb-timeline"></div>
+            <div class="row">
+              <button id="sb-preview-btn" class="ghost-btn">▶ Preview sequence</button>
+              <button id="scene-generate-btn" class="primary-btn">🎬 Generate movie</button>
+              <button id="sb-clear-btn" class="ghost-btn">Clear timeline</button>
+            </div>
+            <div id="sb-preview" class="sb-preview hidden"><div class="subtle small" id="sb-preview-cap"></div><img id="sb-preview-img" alt="timeline preview" /></div>
+            <div id="scene-status-box" class="job-status-box hidden">
+              <div class="spinner"></div>
+              <div><div id="scene-status-text" class="job-status-text"></div><div id="scene-status-sub" class="subtle small"></div></div>
+            </div>
+            <div id="scene-result" class="img-result hidden"></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="view-playlists" class="view hidden">
+        <h1>Playlists <span class="subtle small">(Scenebuilder projects)</span></h1>
+        <div class="row"><input id="pl-name" placeholder="New playlist name" /><button id="pl-create" class="primary-btn">Create</button></div>
+        <div id="player" class="player hidden"><img id="player-img" alt="" /><video id="player-vid" class="hidden" muted playsinline autoplay loop></video><div id="player-cap" class="subtle small"></div>
+          <button id="player-stop" class="ghost-btn">Stop</button></div>
+        <div id="pl-list"></div>
+      </section>
+
+      <section id="view-history" class="view hidden">
+        <h1>Generation History</h1>
+        <table class="history-table">
+          <thead><tr><th>Type</th><th>Prompt</th><th>Options</th><th>Status</th><th>Node</th><th>Retries</th></tr></thead>
+          <tbody id="history-body"></tbody>
+        </table>
+      </section>
+
+      <section id="view-cluster" class="view hidden">
+        <h1>Distributed Cluster</h1>
+        <p class="subtle">Least-loaded load balancing · heartbeat failure detection · failover. Auto-refreshes every 2 s.</p>
+        <div id="cluster-summary" class="subtle"></div>
+        <table class="history-table">
+          <thead><tr><th>Node</th><th>State</th><th>In-flight</th><th>Done</th><th>Failed</th><th></th></tr></thead>
+          <tbody id="cluster-body"></tbody>
+        </table>
+      </section>
+
+      <section id="view-account" class="view hidden">
+        <h1>Account &amp; Quota</h1>
+        <div class="quota-card">
+          <div class="quota-row"><span>Plan</span><strong id="q-plan">—</strong></div>
+          <div class="quota-row"><span>Month</span><strong id="q-month">—</strong></div>
+          <div class="quota-row"><span>Generations used</span><strong id="q-used">—</strong></div>
+          <div class="quota-bar-track"><div id="q-bar" class="quota-bar-fill"></div></div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div id="modal" class="modal hidden"><div class="modal-box"><h3>Add to playlist</h3><div id="modal-list"></div>
+    <button id="modal-close" class="ghost-btn">Cancel</button></div></div>
+
+  <script src="/app.js"></script>
+</body>
+</html>
